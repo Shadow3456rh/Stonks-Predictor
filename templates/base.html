@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Stock Predictor - Automated ML Trading Intelligence{% endblock %}</title>
+  
+  <!-- Modern Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- Core Stylesheets -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  {% if is_admin or session.get('admin_id') %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}">
+  {% endif %}
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="{% if is_admin or session.get('admin_id') %}admin-theme{% else %}user-theme{% endif %}">
+
+  <!-- Navigation Bar -->
+  <nav class="navbar {% if is_admin or session.get('admin_id') %}navbar-admin{% else %}navbar-consumer{% endif %}">
+    <div class="nav-container">
+      <div class="nav-brand">
+        <a href="{{ url_for('index') }}" class="brand-link">
+          <span class="brand-icon">📈</span>
+          <span class="brand-name">Stock<span class="accent-text">Predictor</span></span>
+        </a>
+        {% if is_admin or session.get('admin_id') %}
+          <span class="badge-admin-mode">OPS MONITORING</span>
+        {% endif %}
+      </div>
+
+      <div class="nav-links">
+        <a href="{{ url_for('index') }}" class="nav-item">Architecture</a>
+
+        {% if session.get('user_id') %}
+          <a href="{{ url_for('user_dashboard') }}" class="nav-item active-nav">Trader Dashboard</a>
+          <span class="user-pill">👤 {{ session.get('user_email') }}</span>
+          <a href="{{ url_for('logout') }}" class="btn-nav btn-outline">Sign Out</a>
+        {% elif session.get('admin_id') %}
+          <a href="{{ url_for('admin_dashboard') }}" class="nav-item active-nav">Ops Telemetry</a>
+          <span class="admin-pill">🛡️ {{ session.get('admin_username') }}</span>
+          <a href="{{ url_for('admin_logout') }}" class="btn-nav btn-danger">Exit Admin</a>
+        {% else %}
+          <a href="{{ url_for('login') }}" class="btn-nav btn-primary">Trader Login</a>
+          <a href="{{ url_for('admin_login') }}" class="btn-nav btn-admin">Admin Portal</a>
+        {% endif %}
+      </div>
+    </div>
+  </nav>
+
+  <!-- Flash Notification Messages -->
+  <div class="alerts-wrapper">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">
+            <span class="alert-text">{{ message }}</span>
+            <button class="alert-close" onclick="this.parentElement.remove();">&times;</button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+  </div>
+
+  <!-- Main Content Block -->
+  <main class="main-content">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div class="footer-container">
+      <div class="footer-meta">
+        <strong>Stock Predictor Pipeline</strong> &bull; Machine Learning Project (5th Sem ML) &bull; GitHub Actions Scheduled CI/CD
+      </div>
+      <div class="footer-links">
+        <span>Linear Regression</span> &bull; 
+        <span>KNN</span> &bull; 
+        <span>Decision Tree</span> &bull; 
+        <span>Random Forest</span> &bull; 
+        <span>XGBoost</span>
+      </div>
+    </div>
+  </footer>
+
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

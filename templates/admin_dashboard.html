@@ -1,0 +1,355 @@
+{% extends "base.html" %}
+
+{% block title %}MLOps Telemetry & Control Panel - Admin{% endblock %}
+
+{% block content %}
+<div class="admin-dashboard-container">
+
+  <!-- Admin Subheader / Status Bar -->
+  <div class="admin-header-bar">
+    <div class="admin-header-title">
+      <div class="admin-badge-pulse">
+        <span class="pulse-indicator"></span>
+        <span>PIPELINE TELEMETRY ACTIVE</span>
+      </div>
+      <h2>MLOps Operations & Pipeline Governance</h2>
+      <p>Automated retraining cron monitoring, model evaluation leaderboards, and GitHub Actions dispatch control.</p>
+    </div>
+
+    <!-- Pipeline Trigger Action Box -->
+    <div class="admin-trigger-box">
+      <button type="button" id="btn-trigger-pipeline" class="btn btn-trigger-pulse" onclick="triggerPipelineRun()">
+        <span class="trigger-icon">⚡</span>
+        <span id="trigger-btn-text">Run Pipeline Now</span>
+      </button>
+      <div class="trigger-subtext">Dispatches GitHub Actions / Local Engine</div>
+    </div>
+  </div>
+
+  <!-- Real-Time Pipeline Execution Modal / Progress Banner -->
+  <div id="pipeline-progress-panel" class="card admin-card pipeline-status-banner" style="display: none;">
+    <div class="pipeline-progress-header">
+      <div class="pipeline-step-badge">
+        <span id="pipeline-status-pill" class="badge-running">RUNNING</span>
+        <span id="pipeline-current-step">Initializing automated pipeline stages...</span>
+      </div>
+      <div class="pipeline-source-tag" id="pipeline-source-tag">Engine: Local Background Worker</div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="progress-bar-track">
+      <div id="pipeline-progress-bar" class="progress-bar-fill" style="width: 5%;"></div>
+    </div>
+
+    <!-- Live Terminal Log Box -->
+    <div class="admin-terminal-window">
+      <div class="terminal-bar">
+        <span>stdout / execution log stream</span>
+        <span class="terminal-dots">● ● ●</span>
+      </div>
+      <div id="pipeline-terminal-logs" class="terminal-body">
+        <div class="log-line">[WAITING] Initiating step execution...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 1: Pipeline Health Telemetry Cards -->
+  <div class="admin-telemetry-grid">
+    <div class="card admin-metric-card">
+      <div class="admin-metric-label">Cron Schedule (GitHub Actions)</div>
+      <div class="admin-metric-val">0 0 * * *</div>
+      <div class="admin-metric-detail">Runs daily at 00:00 UTC on Ubuntu VM</div>
+    </div>
+
+    <div class="card admin-metric-card">
+      <div class="admin-metric-label">Last Ingest & Train Run</div>
+      <div class="admin-metric-val" id="telemetry-last-run">{{ last_updated }}</div>
+      <div class="admin-metric-detail">Timestamp from <code>data/last_updated.txt</code></div>
+    </div>
+
+    <div class="card admin-metric-card">
+      <div class="admin-metric-label">Active Production Model</div>
+      <div class="admin-metric-val val-emerald">{{ deployed_model_name or "None Deployed" }}</div>
+      <div class="admin-metric-detail">Promoted to <code>models/deployed_model.pkl</code></div>
+    </div>
+
+    <div class="card admin-metric-card">
+      <div class="admin-metric-label">Automated Storage Mechanism</div>
+      <div class="admin-metric-val">Git Repo Commit</div>
+      <div class="admin-metric-detail">Zero Cloud DB / Committed via CI bot</div>
+    </div>
+  </div>
+
+  <!-- Section 2: Model Benchmarking Leaderboard Table -->
+  <div class="card admin-card">
+    <div class="admin-card-header">
+      <div>
+        <h3 class="admin-card-title">Candidate Models Leaderboard (Latest Evaluation)</h3>
+        <p class="admin-card-subtitle">Comparing candidate regression algorithms on out-of-sample test splits. Evaluated by <code>train_models.py</code>.</p>
+      </div>
+      <div class="leaderboard-meta">
+        <span class="badge badge-outline">Split: 80% Train / 20% Test</span>
+        <span class="badge badge-outline">Features: 12</span>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Status</th>
+            <th>Algorithm Name</th>
+            <th>R² Score (Variance)</th>
+            <th>RMSE ($)</th>
+            <th>MAE ($)</th>
+            <th>Inference Latency</th>
+            <th>Training Duration</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if metrics_data and metrics_data.models %}
+            {% for name, m in metrics_data.models.items() %}
+              <tr class="{% if name == deployed_model_name %}row-champion{% endif %}">
+                <td>
+                  {% if name == deployed_model_name %}
+                    <span class="badge-deployed">DEPLOYED CHAMPION</span>
+                  {% else %}
+                    <span class="badge-candidate">CANDIDATE</span>
+                  {% endif %}
+                </td>
+                <td class="col-algo-name">
+                  <strong>{{ name }}</strong>
+                </td>
+                <td class="col-score {% if name == deployed_model_name %}highlight-score{% endif %}">
+                  {{ m.r2 }}
+                </td>
+                <td>{{ m.rmse }}</td>
+                <td>{{ m.mae }}</td>
+                <td><code>{{ m.inference_time_ms }} ms</code></td>
+                <td>{{ m.train_time_sec }} s</td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="7" class="text-center py-4">
+                No model metrics recorded yet. Click "Run Pipeline Now" to execute training.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Section 3: Two-Column Ops Visualizations (Deployment History & EDA Heatmap) -->
+  <div class="admin-split-grid">
+
+    <!-- Deployment History Chart -->
+    <div class="card admin-card">
+      <div class="admin-card-header">
+        <div>
+          <h3 class="admin-card-title">Model Deployment History</h3>
+          <p class="admin-card-subtitle">Distribution of promoted models across pipeline execution history.</p>
+        </div>
+      </div>
+      <div class="admin-chart-box">
+        <canvas id="deploymentHistoryChart"></canvas>
+      </div>
+      <!-- Recent History Log Table -->
+      <div class="recent-deploy-history">
+        <h4 class="history-subheading">Recent Promotion Audit Log</h4>
+        <ul class="history-list">
+          {% for entry in deployment_history|reverse %}
+            {% if loop.index <= 4 %}
+              <li class="history-item">
+                <span class="history-model">{{ entry.deployed_model }}</span>
+                <span class="history-criterion">Criterion: {{ entry.selection_criterion|upper }}</span>
+                <span class="history-time">{{ entry.timestamp }}</span>
+              </li>
+            {% endif %}
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+
+    <!-- EDA Heatmap & Statistical Summary -->
+    <div class="card admin-card">
+      <div class="admin-card-header">
+        <div>
+          <h3 class="admin-card-title">Exploratory Data Analysis (EDA)</h3>
+          <p class="admin-card-subtitle">Feature correlation matrix exported by <code>clean_data.py</code>.</p>
+        </div>
+        <a href="{{ url_for('static', filename='eda_corr.png') }}" target="_blank" class="btn btn-sm btn-outline">
+          Full Image &nearr;
+        </a>
+      </div>
+
+      <div class="eda-preview-container">
+        <img src="{{ url_for('static', filename='eda_corr.png') }}" alt="Feature Correlation Matrix" class="eda-heatmap-img" onerror="this.parentElement.innerHTML='<div class=\'empty-state\'>Run pipeline to generate correlation matrix artifact (static/eda_corr.png)</div>';">
+      </div>
+
+      {% if eda_data and eda_data.dataset_summary %}
+        <div class="eda-stats-compact">
+          <div class="eda-stat-row">
+            <span>Total Dataset Rows:</span>
+            <strong>{{ eda_data.dataset_summary.total_rows }}</strong>
+          </div>
+          <div class="eda-stat-row">
+            <span>Equities Included:</span>
+            <strong>{{ eda_data.dataset_summary.tickers_included|join(', ') }}</strong>
+          </div>
+          <div class="eda-stat-row">
+            <span>Engineered Features:</span>
+            <strong>{{ eda_data.dataset_summary.features_engineered|join(', ') }}</strong>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // Render Deployment History Chart
+  const historyCounts = {{ history_counts|tojson|safe if history_counts else '{}' }};
+  const historyLabels = Object.keys(historyCounts);
+  const historyValues = Object.values(historyCounts);
+
+  const historyCtx = document.getElementById('deploymentHistoryChart');
+  if (historyCtx && historyLabels.length > 0) {
+    new Chart(historyCtx.getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: historyLabels,
+        datasets: [{
+          label: 'Times Promoted to Production',
+          data: historyValues,
+          backgroundColor: [
+            'rgba(16, 185, 129, 0.75)',
+            'rgba(59, 130, 246, 0.75)',
+            'rgba(245, 158, 11, 0.75)',
+            'rgba(139, 92, 246, 0.75)',
+            'rgba(236, 72, 153, 0.75)'
+          ],
+          borderColor: [
+            '#10b981',
+            '#3b82f6',
+            '#f5980b',
+            '#8b92f6',
+            '#ec4899'
+          ],
+          borderWidth: 1.5,
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          x: {
+            grid: { color: 'rgba(51, 65, 85, 0.4)' },
+            ticks: { color: '#94a3b8', font: { family: 'Inter', size: 11 } }
+          },
+          y: {
+            beginAtZero: true,
+            ticks: { stepSize: 1, color: '#94a3b8', font: { family: 'Inter', size: 11 } },
+            grid: { color: 'rgba(51, 65, 85, 0.4)' }
+          }
+        }
+      }
+    });
+  }
+
+  // =========================================================================
+  // Pipeline Triggering & Real-Time Polling Logic
+  // =========================================================================
+  let pollInterval = null;
+
+  function triggerPipelineRun() {
+    const btn = document.getElementById('btn-trigger-pipeline');
+    const btnText = document.getElementById('trigger-btn-text');
+    const panel = document.getElementById('pipeline-progress-panel');
+    const progressBar = document.getElementById('pipeline-progress-bar');
+    const terminalLogs = document.getElementById('pipeline-terminal-logs');
+
+    btn.disabled = true;
+    btnText.innerText = "Dispatching Run...";
+    panel.style.display = 'block';
+    terminalLogs.innerHTML = '<div class="log-line">[SYSTEM] Sending pipeline trigger command...</div>';
+
+    fetch('/api/admin/trigger-pipeline', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'auto' })
+    })
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById('pipeline-source-tag').innerText = 
+        data.source === 'github_actions' ? 'Engine: GitHub Actions Workflow' : 'Engine: Local Async Runner';
+      terminalLogs.innerHTML += `<div class="log-line">[TRIGGER] ${data.message}</div>`;
+      startPolling();
+    })
+    .catch(err => {
+      terminalLogs.innerHTML += `<div class="log-line text-danger">[ERROR] Could not trigger pipeline: ${err}</div>`;
+      btn.disabled = false;
+      btnText.innerText = "Run Pipeline Now";
+    });
+  }
+
+  function startPolling() {
+    if (pollInterval) clearInterval(pollInterval);
+    pollInterval = setInterval(checkPipelineStatus, 2000);
+  }
+
+  function checkPipelineStatus() {
+    fetch('/api/admin/pipeline-status')
+      .then(res => res.json())
+      .then(state => {
+        const progressBar = document.getElementById('pipeline-progress-bar');
+        const statusPill = document.getElementById('pipeline-status-pill');
+        const stepText = document.getElementById('pipeline-current-step');
+        const terminalLogs = document.getElementById('pipeline-terminal-logs');
+        const btn = document.getElementById('btn-trigger-pipeline');
+        const btnText = document.getElementById('trigger-btn-text');
+
+        progressBar.style.width = `${state.progress}%`;
+        stepText.innerText = state.current_step || 'Executing...';
+
+        if (state.logs && state.logs.length > 0) {
+          terminalLogs.innerHTML = state.logs.map(line => `<div class="log-line">${line}</div>`).join('');
+          terminalLogs.scrollTop = terminalLogs.scrollHeight;
+        }
+
+        if (state.status === 'running') {
+          statusPill.className = 'badge-running';
+          statusPill.innerText = 'RUNNING';
+        } else if (state.status === 'success') {
+          statusPill.className = 'badge-success';
+          statusPill.innerText = 'COMPLETED';
+          btn.disabled = false;
+          btnText.innerText = "Run Pipeline Now";
+          clearInterval(pollInterval);
+          setTimeout(() => {
+            // Reload page to reflect fresh models and leaderboard
+            window.location.reload();
+          }, 2500);
+        } else if (state.status === 'failed') {
+          statusPill.className = 'badge-danger';
+          statusPill.innerText = 'FAILED';
+          btn.disabled = false;
+          btnText.innerText = "Run Pipeline Now";
+          clearInterval(pollInterval);
+        }
+      })
+      .catch(err => {
+        console.warn("Polling error:", err);
+      });
+  }
+</script>
+{% endblock %}

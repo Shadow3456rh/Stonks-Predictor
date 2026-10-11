@@ -1,0 +1,62 @@
+{
+  "timestamp": "2026-10-11 15:26:17 UTC",
+  "features": [
+    "Open",
+    "High",
+    "Low",
+    "Close",
+    "Volume",
+    "MA_5",
+    "MA_10",
+    "MA_20",
+    "MA_50",
+    "Daily_Return",
+    "Volatility_10",
+    "Spread"
+  ],
+  "target": "Target_Next_Close",
+  "train_samples": 2000,
+  "test_samples": 500,
+  "models": {
+    "Linear_Regression": {
+      "model_name": "Linear_Regression",
+      "rmse": 8.568,
+      "mae": 5.8642,
+      "r2": 0.9857,
+      "inference_time_ms": 0.94,
+      "train_time_sec": 0.004
+    },
+    "KNN_Regressor": {
+      "model_name": "KNN_Regressor",
+      "rmse": 16.5797,
+      "mae": 11.74,
+      "r2": 0.9466,
+      "inference_time_ms": 7.35,
+      "train_time_sec": 0.004
+    },
+    "Decision_Tree": {
+      "model_name": "Decision_Tree",
+      "rmse": 10.9069,
+      "mae": 7.8538,
+      "r2": 0.9769,
+      "inference_time_ms": 0.77,
+      "train_time_sec": 0.009
+    },
+    "Random_Forest": {
+      "model_name": "Random_Forest",
+      "rmse": 9.7305,
+      "mae": 6.9993,
+      "r2": 0.9816,
+      "inference_time_ms": 15.41,
+      "train_time_sec": 0.137
+    },
+    "XGBoost": {
+      "model_name": "XGBoost",
+      "rmse": 9.9337,
+      "mae": 7.0795,
+      "r2": 0.9808,
+      "inference_time_ms": 3.08,
+      "train_time_sec": 1.824
+    }
+  }
+}

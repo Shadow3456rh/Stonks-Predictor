@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Trader Login - Stock Predictor{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+  <div class="auth-card">
+    <div class="auth-header">
+      <div class="auth-icon">📊</div>
+      <h2>Trader Access Portal</h2>
+      <p>Log in to access live forecasts, actual vs predicted charts, and next-day price direction.</p>
+    </div>
+
+    <!-- Tab switcher for Login / Register -->
+    <div class="auth-tabs">
+      <button type="button" class="tab-btn active" id="tab-login" onclick="switchAuthTab('login')">Sign In</button>
+      <button type="button" class="tab-btn" id="tab-register" onclick="switchAuthTab('register')">Create Account</button>
+    </div>
+
+    <!-- Login Form -->
+    <form method="POST" action="{{ url_for('login') }}" id="form-login" class="auth-form">
+      <input type="hidden" name="action" value="login">
+      
+      <div class="form-group">
+        <label for="login-email">Email Address</label>
+        <input type="email" id="login-email" name="email" placeholder="name@gmail.com" required autocomplete="email">
+      </div>
+
+      <div class="form-group">
+        <label for="login-password">Password</label>
+        <input type="password" id="login-password" name="password" placeholder="••••••••" required autocomplete="current-password">
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block">Sign In to Dashboard &rarr;</button>
+
+      <!-- Quick Demo Account Fillers -->
+      <div class="demo-credentials-box">
+        <span class="demo-title">⚡ Quick Demo Test Credentials:</span>
+        <div class="demo-buttons">
+          <button type="button" class="btn-demo-chip" onclick="fillCredentials('user@gmail.com', 'user123')">
+            User 1 (user@gmail.com)
+          </button>
+          <button type="button" class="btn-demo-chip" onclick="fillCredentials('trader@gmail.com', 'trader123')">
+            User 2 (trader@gmail.com)
+          </button>
+        </div>
+      </div>
+    </form>
+
+    <!-- Register Form -->
+    <form method="POST" action="{{ url_for('login') }}" id="form-register" class="auth-form" style="display: none;">
+      <input type="hidden" name="action" value="register">
+
+      <div class="form-group">
+        <label for="reg-email">Email Address</label>
+        <input type="email" id="reg-email" name="email" placeholder="newtrader@gmail.com" required>
+      </div>
+
+      <div class="form-group">
+        <label for="reg-password">Create Password</label>
+        <input type="password" id="reg-password" name="password" placeholder="Minimum 6 characters" required minlength="6">
+      </div>
+
+      <button type="submit" class="btn btn-secondary btn-block">Create Trader Account &rarr;</button>
+    </form>
+
+    <div class="auth-footer">
+      <span>Need system telemetry or model retraining?</span>
+      <a href="{{ url_for('admin_login') }}" class="admin-redirect-link">Go to Admin Portal 🛡️</a>
+    </div>
+  </div>
+</div>
+
+<script>
+  function switchAuthTab(tab) {
+    const loginForm = document.getElementById('form-login');
+    const regForm = document.getElementById('form-register');
+    const tabLogin = document.getElementById('tab-login');
+    const tabReg = document.getElementById('tab-register');
+
+    if (tab === 'login') {
+      loginForm.style.display = 'block';
+      regForm.style.display = 'none';
+      tabLogin.classList.add('active');
+      tabReg.classList.remove('active');
+    } else {
+      loginForm.style.display = 'none';
+      regForm.style.display = 'block';
+      tabLogin.classList.remove('active');
+      tabReg.classList.add('active');
+    }
+  }
+
+  function fillCredentials(email, pwd) {
+    document.getElementById('login-email').value = email;
+    document.getElementById('login-password').value = pwd;
+  }
+</script>
+{% endblock %}

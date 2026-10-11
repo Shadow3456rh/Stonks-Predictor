@@ -1,0 +1,84 @@
+name: Stock Predictor Automated ML Pipeline
+
+on:
+  schedule:
+    # Runs automatically every day at 00:00 UTC
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+    # Allows manual trigger anytime from GitHub Actions tab or via REST API trigger button
+    inputs:
+      deployment_criterion:
+        description: 'Model Selection Metric (r2 or rmse)'
+        required: false
+        default: 'r2'
+        type: choice
+        options:
+          - r2
+          - rmse
+      stock_tickers:
+        description: 'Comma-separated tickers (e.g. AAPL,MSFT,GOOGL,AMZN,TSLA)'
+        required: false
+        default: 'AAPL,MSFT,GOOGL,AMZN,TSLA'
+
+permissions:
+  contents: write
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Step 1 - Fetch Stock Data
+        env:
+          STOCK_TICKERS: ${{ github.event.inputs.stock_tickers || 'AAPL,MSFT,GOOGL,AMZN,TSLA' }}
+        run: |
+          echo "=== Executing fetch_data.py ==="
+          python fetch_data.py
+
+      - name: Step 2 - Clean Data & Generate EDA Artifacts
+        run: |
+          echo "=== Executing clean_data.py ==="
+          python clean_data.py
+
+      - name: Step 3 - Train & Benchmark Candidate Models
+        run: |
+          echo "=== Executing train_models.py ==="
+          python train_models.py
+
+      - name: Step 4 - Select & Deploy Best Model
+        env:
+          DEPLOYMENT_CRITERION: ${{ github.event.inputs.deployment_criterion || 'r2' }}
+        run: |
+          echo "=== Executing deploy_best_model.py ==="
+          python deploy_best_model.py
+
+      - name: Commit & Push Pipeline Artifacts Back to Repo
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/ models/ static/eda_corr.png
+          # Only commit if changes exist
+          if git diff --staged --quiet; then
+            echo "No data or model changes to commit."
+          else
+            TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+            git commit -m "[Automated ML Pipeline] Retrained and deployed models - ${TIMESTAMP}"
+            git push origin HEAD:${{ github.ref_name }}
+          fi

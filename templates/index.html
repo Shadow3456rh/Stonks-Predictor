@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Stock Predictor - Automated ML Pipeline Architecture{% endblock %}
+
+{% block content %}
+<div class="landing-hero">
+  <div class="hero-content">
+    <div class="hero-badge">Automated MLOps Pipeline &bull; Academic Engineering Project</div>
+    <h1 class="hero-title">Predict Stock Price Trajectories with an <span class="gradient-text">Automated ML Pipeline</span></h1>
+    <p class="hero-subtitle">
+      A locally-hosted, production-architected pipeline orchestrated via GitHub Actions scheduled cron.
+      Fetches financial data, engineers technical indicators, trains 5 candidate regression models, 
+      promotes the winning model, and serves real-time predictions via Flask.
+    </p>
+
+    <div class="hero-actions">
+      <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg">
+        <span>Enter Trader Dashboard</span> &rarr;
+      </a>
+      <a href="{{ url_for('admin_login') }}" class="btn btn-secondary btn-lg">
+        <span>Admin Ops & Telemetry</span> 🛡️
+      </a>
+    </div>
+
+    <!-- Live Telemetry Pill -->
+    <div class="telemetry-banner">
+      <div class="telemetry-item">
+        <span class="telemetry-label">Pipeline Schedule</span>
+        <span class="telemetry-val">Daily 00:00 UTC (Cron)</span>
+      </div>
+      <div class="telemetry-divider"></div>
+      <div class="telemetry-item">
+        <span class="telemetry-label">Last Retrain</span>
+        <span class="telemetry-val">{{ last_updated }}</span>
+      </div>
+      <div class="telemetry-divider"></div>
+      <div class="telemetry-item">
+        <span class="telemetry-label">Active Model</span>
+        <span class="telemetry-val highlight-val">{{ current_model }}</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Architecture Pipeline Flow Section -->
+<section class="section-container">
+  <div class="section-header">
+    <h2 class="section-title">Automated ML Pipeline Flow</h2>
+    <p class="section-desc">Each run executes autonomously on GitHub Actions runners, commits verified model artifacts back to the repository, and updates prediction services without requiring local machine uptime.</p>
+  </div>
+
+  <div class="pipeline-grid">
+    <!-- Step 1 -->
+    <div class="pipeline-card">
+      <div class="step-number">01</div>
+      <div class="step-icon">📡</div>
+      <h3 class="step-title">Ingest Market Data</h3>
+      <div class="step-script">fetch_data.py</div>
+      <p class="step-desc">
+        Pulls latest OHLCV market feeds via <code>yfinance</code> for configured equities (AAPL, MSFT, GOOGL, AMZN, TSLA). Standardizes schema and updates <code>data/raw_data.csv</code> and <code>data/last_updated.txt</code>.
+      </p>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="pipeline-card">
+      <div class="step-number">02</div>
+      <div class="step-icon">🧹</div>
+      <h3 class="step-title">Clean & Engineer Features</h3>
+      <div class="step-script">clean_data.py</div>
+      <p class="step-desc">
+        Interpolates missing prices, bounds statistical outliers, and derives technical indicators: 5/10/20/50 MAs, daily returns, rolling volatility, and spreads. Generates <code>eda_summary.json</code> and correlation heatmap.
+      </p>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="pipeline-card">
+      <div class="step-number">03</div>
+      <div class="step-icon">🧠</div>
+      <h3 class="step-title">Train 5 Candidate Models</h3>
+      <div class="step-script">train_models.py</div>
+      <p class="step-desc">
+        Trains <strong>Linear Regression</strong>, <strong>KNN</strong>, <strong>Decision Tree</strong>, <strong>Random Forest</strong>, and <strong>XGBoost</strong> over historical splits. Computes RMSE, MAE, R², and inference latencies into <code>models/metrics.json</code>.
+      </p>
+    </div>
+
+    <!-- Step 4 -->
+    <div class="pipeline-card">
+      <div class="step-number">04</div>
+      <div class="step-icon">🚀</div>
+      <h3 class="step-title">Promote & Deploy Champion</h3>
+      <div class="step-script">deploy_best_model.py</div>
+      <p class="step-desc">
+        Evaluates leaderboard metrics against configurable criteria (maximizing R² or minimizing RMSE). Promotes the winner to <code>models/deployed_model.pkl</code> and logs audit history in <code>models/deployment_log.json</code>.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- Model Comparison Section -->
+<section class="section-container bg-surface">
+  <div class="section-header">
+    <h2 class="section-title">Ensemble Candidate Models</h2>
+    <p class="section-desc">Evaluated concurrently during each pipeline cycle to guarantee optimal predictive accuracy.</p>
+  </div>
+
+  <div class="models-grid">
+    <div class="model-spec-card">
+      <h4>Linear Regression</h4>
+      <p class="model-role">Parametric Baseline</p>
+      <p class="model-detail">Scales features using standard z-score normalization to determine linear trend coefficients across moving averages and spreads.</p>
+    </div>
+
+    <div class="model-spec-card">
+      <h4>K-Nearest Neighbors (KNN)</h4>
+      <p class="model-role">Instance-Based Memory</p>
+      <p class="model-detail">Finds k=5 closest historical market patterns based on normalized volatility and momentum indicators using inverse-distance weighting.</p>
+    </div>
+
+    <div class="model-spec-card">
+      <h4>Decision Tree Regressor</h4>
+      <p class="model-role">Non-Linear Partitioning</p>
+      <p class="model-detail">Constructs interpretable orthogonal decision boundaries to segment price volatility regimes with bounded tree depth.</p>
+    </div>
+
+    <div class="model-spec-card">
+      <h4>Random Forest Regressor</h4>
+      <p class="model-role">Bootstrap Bagging Ensemble</p>
+      <p class="model-detail">Aggregates 100 decorrelated decision trees, effectively reducing variance and resisting overfitting on volatile financial time-series.</p>
+    </div>
+
+    <div class="model-spec-card">
+      <h4>XGBoost Regressor</h4>
+      <p class="model-role">Gradient Boosted Trees</p>
+      <p class="model-detail">Sequentially minimizes loss gradients with L1/L2 regularization for state-of-the-art non-linear predictive power.</p>
+    </div>
+  </div>
+</section>
+{% endblock %}
