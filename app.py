@@ -31,14 +31,19 @@ from auth import (
     admin_required
 )
 
-# Application Initialization
-app = Flask(__name__)
-app.secret_key = os.environ.get("FLASK_SECRET_KEY", "stock-predictor-academic-secret-key-2025")
-
 # Paths to storage artifacts
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 MODELS_DIR = os.path.join(BASE_DIR, "models")
+
+# Application Initialization with explicit absolute paths for Serverless environments
+app = Flask(
+    __name__,
+    static_folder=os.path.join(BASE_DIR, "static"),
+    static_url_path="/static",
+    template_folder=os.path.join(BASE_DIR, "templates")
+)
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "stock-predictor-academic-secret-key-2025")
 RAW_DATA_PATH = os.path.join(DATA_DIR, "raw_data.csv")
 CLEANED_DATA_PATH = os.path.join(DATA_DIR, "cleaned_data.csv")
 TIMESTAMP_PATH = os.path.join(DATA_DIR, "last_updated.txt")
