@@ -15,7 +15,21 @@ from functools import wraps
 from flask import session, redirect, url_for, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "users.db")
+import shutil
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DEFAULT_DB_PATH = os.path.join(BASE_DIR, "users.db")
+
+# In serverless environments like Vercel, root filesystem is read-only. Use /tmp for SQLite.
+if os.environ.get("VERCEL") or not os.access(BASE_DIR, os.W_OK):
+    DB_PATH = "/tmp/users.db"
+    if not os.path.exists(DB_PATH) and os.path.exists(DEFAULT_DB_PATH):
+        try:
+            shutil.copyfile(DEFAULT_DB_PATH, DB_PATH)
+        except Exception:
+            pass
+else:
+    DB_PATH = DEFAULT_DB_PATH
 
 # Admin credentials
 ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
