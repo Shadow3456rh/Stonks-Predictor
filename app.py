@@ -141,7 +141,22 @@ def generate_ticker_predictions(ticker):
         return None
 
     try:
-        model = joblib.load(DEPLOYED_MODEL_PATH)
+        try:
+            model = joblib.load(DEPLOYED_MODEL_PATH)
+        except Exception:
+            # Fallback to pure scikit-learn models if deployed model requires missing serverless module (e.g. xgboost)
+            model = None
+            for alt_name in ["Linear_Regression.pkl", "Random_Forest.pkl", "Decision_Tree.pkl", "KNN_Regressor.pkl"]:
+                alt_path = os.path.join(MODELS_DIR, alt_name)
+                if os.path.exists(alt_path):
+                    try:
+                        model = joblib.load(alt_path)
+                        break
+                    except Exception:
+                        continue
+            if model is None:
+                return None
+
         df = pd.read_csv(CLEANED_DATA_PATH)
         df_ticker = df[df["Ticker"] == ticker].sort_values("Date").reset_index(drop=True)
 

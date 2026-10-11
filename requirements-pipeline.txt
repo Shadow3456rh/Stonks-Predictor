@@ -1,0 +1,7 @@
+# Full Training & CI/CD Pipeline Dependencies (Used by GitHub Actions & Local Retraining)
+-r requirements.txt
+xgboost>=2.0.0
+yfinance>=0.2.35
+matplotlib>=3.8.0
+seaborn>=0.13.0
+python-dotenv>=1.0.0
