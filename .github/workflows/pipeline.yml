@@ -2,8 +2,8 @@ name: Stock Predictor Automated ML Pipeline
 
 on:
   schedule:
-    # Runs automatically every day at 00:00 UTC
-    - cron: '0 0 * * *'
+    # Runs every hour during stock market trading hours (13:00 to 21:00 UTC, Mon-Fri)
+    - cron: '0 13-21 * * 1-5'
   workflow_dispatch:
     # Allows manual trigger anytime from GitHub Actions tab or via REST API trigger button
     inputs:

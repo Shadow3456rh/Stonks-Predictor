@@ -41,6 +41,7 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 MODELS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "models")
 CLEANED_DATA_PATH = os.path.join(DATA_DIR, "cleaned_data.csv")
 METRICS_PATH = os.path.join(MODELS_DIR, "metrics.json")
+RUN_LOG_PATH = os.path.join(DATA_DIR, "model_run_log.txt")
 
 # Features to use for forecasting next-day closing price
 FEATURE_COLS = [
@@ -180,6 +181,16 @@ def train_and_evaluate():
     with open(METRICS_PATH, "w", encoding="utf-8") as f:
         json.dump(output_payload, f, indent=2)
 
+    # Append run timestamp to model_run_log.txt
+    now_utc = datetime.datetime.now(datetime.timezone.utc)
+    date_str = now_utc.strftime("%Y-%m-%d")
+    time_str = now_utc.strftime("%H:%M:%S UTC")
+    log_line = f"model ran at {date_str} : {time_str}\n"
+
+    with open(RUN_LOG_PATH, "a", encoding="utf-8") as f:
+        f.write(log_line)
+
+    print(f"[+] Logged run event: '{log_line.strip()}' to {RUN_LOG_PATH}")
     print(f"\n[+] All metrics successfully logged to {METRICS_PATH}")
     return output_payload
 

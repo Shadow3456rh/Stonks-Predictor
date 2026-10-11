@@ -46,6 +46,7 @@ EDA_SUMMARY_PATH = os.path.join(DATA_DIR, "eda_summary.json")
 METRICS_PATH = os.path.join(MODELS_DIR, "metrics.json")
 DEPLOYED_MODEL_PATH = os.path.join(MODELS_DIR, "deployed_model.pkl")
 DEPLOYMENT_LOG_PATH = os.path.join(MODELS_DIR, "deployment_log.json")
+MODEL_RUN_LOG_PATH = os.path.join(DATA_DIR, "model_run_log.txt")
 
 # In-memory execution state for real-time pipeline monitoring
 pipeline_state = {
@@ -104,6 +105,15 @@ def get_deployment_log():
                 data = json.load(f)
                 if isinstance(data, list):
                     return data
+        except Exception:
+            pass
+def get_model_run_logs(max_entries=10):
+    """Loads recent 'model ran at YYYY-MM-DD : HH:MM:SS UTC' log entries."""
+    if os.path.exists(MODEL_RUN_LOG_PATH):
+        try:
+            with open(MODEL_RUN_LOG_PATH, "r", encoding="utf-8") as f:
+                lines = [line.strip() for line in f if line.strip()]
+                return lines[-max_entries:]
         except Exception:
             pass
     return []
@@ -352,7 +362,8 @@ def admin_dashboard():
         deployed_model_name=deployed_model_name,
         history_counts=history_counts,
         eda_data=eda_data,
-        pipeline_state=pipeline_state
+        pipeline_state=pipeline_state,
+        model_run_logs=get_model_run_logs()
     )
 
 
