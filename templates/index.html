@@ -1,96 +1,92 @@
 {% extends "base.html" %}
 
-{% block title %}Stock Predictor - Automated ML Pipeline Architecture{% endblock %}
+{% block title %}Stock Predictor — Automated Machine Learning Pipeline{% endblock %}
 
 {% block content %}
 <div class="landing-hero">
   <div class="hero-content">
-    <div class="hero-badge">Automated MLOps Pipeline &bull; Academic Engineering Project</div>
-    <h1 class="hero-title">Predict Stock Price Trajectories with an <span class="gradient-text">Automated ML Pipeline</span></h1>
+    <div class="hero-badge">Automated MLOps Pipeline &bull; Academic Project</div>
+    <h1 class="hero-title">Continuous Stock Price Forecasting with an Automated Pipeline</h1>
     <p class="hero-subtitle">
-      A locally-hosted, production-architected pipeline orchestrated via GitHub Actions scheduled cron.
-      Fetches financial data, engineers technical indicators, trains 5 candidate regression models, 
-      promotes the winning model, and serves real-time predictions via Flask.
+      An automated machine learning lifecycle orchestrated via scheduled GitHub Actions runners.
+      Ingests market data, bounds statistical outliers, engineers technical indicators, benchmarks 5 candidate regression models, 
+      and deploys the superior model to serve real-time predictions.
     </p>
 
     <div class="hero-actions">
       <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg">
-        <span>Enter Trader Dashboard</span> &rarr;
+        <span>Trader Dashboard</span> &rarr;
       </a>
-      <a href="{{ url_for('admin_login') }}" class="btn btn-secondary btn-lg">
-        <span>Admin Ops & Telemetry</span> 🛡️
+      <a href="{{ url_for('admin_login') }}" class="btn btn-outline btn-lg">
+        <span>Admin & Operations</span> &rarr;
       </a>
     </div>
 
-    <!-- Live Telemetry Pill -->
-    <div class="telemetry-banner">
+    <!-- Telemetry Bar -->
+    <div class="telemetry-bar">
       <div class="telemetry-item">
-        <span class="telemetry-label">Pipeline Schedule</span>
-        <span class="telemetry-val">Daily 00:00 UTC (Cron)</span>
+        <span class="telemetry-label">Cron Schedule</span>
+        <span class="telemetry-val">Hourly (US Market Hours)</span>
       </div>
-      <div class="telemetry-divider"></div>
+      <div class="telemetry-separator"></div>
       <div class="telemetry-item">
         <span class="telemetry-label">Last Retrain</span>
         <span class="telemetry-val">{{ last_updated }}</span>
       </div>
-      <div class="telemetry-divider"></div>
+      <div class="telemetry-separator"></div>
       <div class="telemetry-item">
-        <span class="telemetry-label">Active Model</span>
+        <span class="telemetry-label">Deployed Model</span>
         <span class="telemetry-val highlight-val">{{ current_model }}</span>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Architecture Pipeline Flow Section -->
+<!-- Pipeline Architecture Section -->
 <section class="section-container">
   <div class="section-header">
-    <h2 class="section-title">Automated ML Pipeline Flow</h2>
-    <p class="section-desc">Each run executes autonomously on GitHub Actions runners, commits verified model artifacts back to the repository, and updates prediction services without requiring local machine uptime.</p>
+    <h2 class="section-title">Automated Pipeline Architecture</h2>
+    <p class="section-desc">The pipeline executes in sequential stages on headless cloud runners, committing updated models and evaluation logs directly to the repository.</p>
   </div>
 
   <div class="pipeline-grid">
     <!-- Step 1 -->
     <div class="pipeline-card">
-      <div class="step-number">01</div>
-      <div class="step-icon">📡</div>
-      <h3 class="step-title">Ingest Market Data</h3>
+      <div class="step-num">01</div>
+      <h3 class="step-title">Market Ingestion</h3>
       <div class="step-script">fetch_data.py</div>
       <p class="step-desc">
-        Pulls latest OHLCV market feeds via <code>yfinance</code> for configured equities (AAPL, MSFT, GOOGL, AMZN, TSLA). Standardizes schema and updates <code>data/raw_data.csv</code> and <code>data/last_updated.txt</code>.
+        Pulls standardized OHLCV historical time-series for configured equities (AAPL, MSFT, GOOGL, AMZN, TSLA) using market data APIs, writing to <code>data/raw_data.csv</code>.
       </p>
     </div>
 
     <!-- Step 2 -->
     <div class="pipeline-card">
-      <div class="step-number">02</div>
-      <div class="step-icon">🧹</div>
-      <h3 class="step-title">Clean & Engineer Features</h3>
+      <div class="step-num">02</div>
+      <h3 class="step-title">Feature Engineering</h3>
       <div class="step-script">clean_data.py</div>
       <p class="step-desc">
-        Interpolates missing prices, bounds statistical outliers, and derives technical indicators: 5/10/20/50 MAs, daily returns, rolling volatility, and spreads. Generates <code>eda_summary.json</code> and correlation heatmap.
+        Applies IQR statistical outlier filtering and constructs technical indicators: moving averages (5, 10, 20, 50), rolling volatility, daily returns, and high-low spreads.
       </p>
     </div>
 
     <!-- Step 3 -->
     <div class="pipeline-card">
-      <div class="step-number">03</div>
-      <div class="step-icon">🧠</div>
-      <h3 class="step-title">Train 5 Candidate Models</h3>
+      <div class="step-num">03</div>
+      <h3 class="step-title">Multi-Model Benchmarking</h3>
       <div class="step-script">train_models.py</div>
       <p class="step-desc">
-        Trains <strong>Linear Regression</strong>, <strong>KNN</strong>, <strong>Decision Tree</strong>, <strong>Random Forest</strong>, and <strong>XGBoost</strong> over historical splits. Computes RMSE, MAE, R², and inference latencies into <code>models/metrics.json</code>.
+        Trains Linear Regression, KNN, Decision Tree, Random Forest, and XGBoost across chronological splits. Evaluates RMSE, MAE, R², and inference latencies.
       </p>
     </div>
 
     <!-- Step 4 -->
     <div class="pipeline-card">
-      <div class="step-number">04</div>
-      <div class="step-icon">🚀</div>
-      <h3 class="step-title">Promote & Deploy Champion</h3>
+      <div class="step-num">04</div>
+      <h3 class="step-title">Champion Promotion</h3>
       <div class="step-script">deploy_best_model.py</div>
       <p class="step-desc">
-        Evaluates leaderboard metrics against configurable criteria (maximizing R² or minimizing RMSE). Promotes the winner to <code>models/deployed_model.pkl</code> and logs audit history in <code>models/deployment_log.json</code>.
+        Evaluates leaderboard metrics against configurable promotion criteria (maximizing R²), promotes the winning artifact to <code>deployed_model.pkl</code>, and logs audit history.
       </p>
     </div>
   </div>
@@ -99,39 +95,39 @@
 <!-- Model Comparison Section -->
 <section class="section-container bg-surface">
   <div class="section-header">
-    <h2 class="section-title">Ensemble Candidate Models</h2>
-    <p class="section-desc">Evaluated concurrently during each pipeline cycle to guarantee optimal predictive accuracy.</p>
+    <h2 class="section-title">Evaluated Regression Algorithms</h2>
+    <p class="section-desc">Benchmarked concurrently during each pipeline run to ensure optimal out-of-sample generalization.</p>
   </div>
 
   <div class="models-grid">
     <div class="model-spec-card">
       <h4>Linear Regression</h4>
-      <p class="model-role">Parametric Baseline</p>
-      <p class="model-detail">Scales features using standard z-score normalization to determine linear trend coefficients across moving averages and spreads.</p>
+      <div class="model-role">Parametric Baseline</div>
+      <p class="model-detail">Standardized z-score normalization evaluating linear combinations across price momentum and volume indicators.</p>
     </div>
 
     <div class="model-spec-card">
-      <h4>K-Nearest Neighbors (KNN)</h4>
-      <p class="model-role">Instance-Based Memory</p>
-      <p class="model-detail">Finds k=5 closest historical market patterns based on normalized volatility and momentum indicators using inverse-distance weighting.</p>
+      <h4>K-Nearest Neighbors</h4>
+      <div class="model-role">Instance-Based Memory</div>
+      <p class="model-detail">Identifies k=5 nearest historical market regimes based on normalized technical features using distance-weighted voting.</p>
     </div>
 
     <div class="model-spec-card">
-      <h4>Decision Tree Regressor</h4>
-      <p class="model-role">Non-Linear Partitioning</p>
+      <h4>Decision Tree</h4>
+      <div class="model-role">Non-Linear Partitioning</div>
       <p class="model-detail">Constructs interpretable orthogonal decision boundaries to segment price volatility regimes with bounded tree depth.</p>
     </div>
 
     <div class="model-spec-card">
-      <h4>Random Forest Regressor</h4>
-      <p class="model-role">Bootstrap Bagging Ensemble</p>
-      <p class="model-detail">Aggregates 100 decorrelated decision trees, effectively reducing variance and resisting overfitting on volatile financial time-series.</p>
+      <h4>Random Forest</h4>
+      <div class="model-role">Bagging Ensemble</div>
+      <p class="model-detail">Averages 100 decorrelated decision trees, reducing variance and mitigating overfitting on volatile market series.</p>
     </div>
 
     <div class="model-spec-card">
-      <h4>XGBoost Regressor</h4>
-      <p class="model-role">Gradient Boosted Trees</p>
-      <p class="model-detail">Sequentially minimizes loss gradients with L1/L2 regularization for state-of-the-art non-linear predictive power.</p>
+      <h4>XGBoost</h4>
+      <div class="model-role">Gradient Boosting</div>
+      <p class="model-detail">Sequentially minimizes loss gradients with L1/L2 regularization for robust non-linear trend fitting.</p>
     </div>
   </div>
 </section>

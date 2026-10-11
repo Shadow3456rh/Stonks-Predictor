@@ -1,52 +1,46 @@
 {% extends "base.html" %}
 
-{% block title %}Administrator Login - Stock Predictor Ops{% endblock %}
+{% block title %}Administrator Portal — Stock Predictor{% endblock %}
 
 {% block content %}
 <div class="auth-wrapper admin-auth-wrapper">
   <div class="auth-card admin-auth-card">
     <div class="auth-header">
-      <div class="admin-auth-badge">SYSTEM PRIVILEGES REQUIRED</div>
-      <div class="auth-icon">🛡️</div>
-      <h2>MLOps Pipeline Administration</h2>
-      <p>Secure administrative access to model training benchmarks, deployment logs, and real-time GitHub Actions pipeline triggers.</p>
+      <div class="admin-auth-tag">RESTRICTED ACCESS</div>
+      <h2>Operations Console</h2>
+      <p>Administrative authentication for MLOps pipeline monitoring and model redeployment.</p>
     </div>
 
     <!-- Admin Login Form -->
     <form method="POST" action="{{ url_for('admin_login') }}" class="auth-form">
       <div class="form-group">
-        <label for="admin-username">Admin Identifier</label>
-        <div class="input-with-icon">
-          <input type="text" id="admin-username" name="username" placeholder="admin" required autocomplete="username">
-        </div>
+        <label for="admin-username">Username</label>
+        <input type="text" id="admin-username" name="username" placeholder="admin" required autocomplete="username">
       </div>
 
       <div class="form-group">
-        <label for="admin-password">Administrative Key / Secret</label>
-        <div class="input-with-icon">
-          <input type="password" id="admin-password" name="password" placeholder="••••••••••••" required autocomplete="current-password">
-        </div>
-        <small class="form-hint">Loaded from <code>ADMIN_PASSWORD</code> environment variable.</small>
+        <label for="admin-password">Administrative Key</label>
+        <input type="password" id="admin-password" name="password" placeholder="••••••••••••" required autocomplete="current-password">
+        <small class="form-hint">Authenticated via <code>ADMIN_PASSWORD</code> environment variable.</small>
       </div>
 
-      <button type="submit" class="btn btn-admin btn-block">Authenticate to Ops Console &rarr;</button>
+      <button type="submit" class="btn btn-admin btn-block">Authenticate Session</button>
 
       <!-- Demo Filler -->
-      <div class="demo-credentials-box admin-demo-box">
-        <span class="demo-title">🔑 Evaluation Credentials (Auto-set via environment):</span>
-        <div class="admin-demo-row">
-          <span>User: <code>admin</code></span> &bull; 
-          <span>Pass: <code>adminpass123</code></span>
+      <div class="demo-box admin-demo-box">
+        <div class="demo-title">Default Evaluation Key:</div>
+        <div class="admin-demo-text">
+          User: <code>admin</code> &bull; Password: <code>adminpass123</code>
         </div>
-        <button type="button" class="btn-demo-chip btn-admin-chip" onclick="fillAdminCredentials('admin', 'adminpass123')">
-          Insert Admin Credentials
+        <button type="button" class="btn-chip" onclick="fillAdminCredentials('admin', 'adminpass123')">
+          Insert Credentials
         </button>
       </div>
     </form>
 
     <div class="auth-footer">
-      <span>Looking for consumer charts?</span>
-      <a href="{{ url_for('login') }}" class="user-redirect-link">Return to Trader Login &rarr;</a>
+      <span>Standard user?</span>
+      <a href="{{ url_for('login') }}">Return to Trader Login &rarr;</a>
     </div>
   </div>
 </div>

@@ -1,39 +1,38 @@
 {% extends "base.html" %}
 
-{% block title %}MLOps Telemetry & Control Panel - Admin{% endblock %}
+{% block title %}Operations & Telemetry Console — Stock Predictor{% endblock %}
 
 {% block content %}
 <div class="admin-dashboard-container">
 
-  <!-- Admin Subheader / Status Bar -->
+  <!-- Header / Action Bar -->
   <div class="admin-header-bar">
     <div class="admin-header-title">
-      <div class="admin-badge-pulse">
-        <span class="pulse-indicator"></span>
-        <span>PIPELINE TELEMETRY ACTIVE</span>
+      <div class="admin-status-indicator">
+        <span class="status-dot-active"></span>
+        <span>TELEMETRY ACTIVE</span>
       </div>
       <h2>MLOps Operations & Pipeline Governance</h2>
-      <p>Automated retraining cron monitoring, model evaluation leaderboards, and GitHub Actions dispatch control.</p>
+      <p>Automated retraining monitoring, candidate model benchmarking, and pipeline execution controls.</p>
     </div>
 
     <!-- Pipeline Trigger Action Box -->
     <div class="admin-trigger-box">
-      <button type="button" id="btn-trigger-pipeline" class="btn btn-trigger-pulse" onclick="triggerPipelineRun()">
-        <span class="trigger-icon">⚡</span>
+      <button type="button" id="btn-trigger-pipeline" class="btn btn-admin-action" onclick="triggerPipelineRun()">
         <span id="trigger-btn-text">Run Pipeline Now</span>
       </button>
-      <div class="trigger-subtext">Dispatches GitHub Actions / Local Engine</div>
+      <div class="trigger-subtext">Triggers GitHub Actions / Local Engine</div>
     </div>
   </div>
 
-  <!-- Real-Time Pipeline Execution Modal / Progress Banner -->
+  <!-- Real-Time Pipeline Execution Banner -->
   <div id="pipeline-progress-panel" class="card admin-card pipeline-status-banner" style="display: none;">
     <div class="pipeline-progress-header">
       <div class="pipeline-step-badge">
         <span id="pipeline-status-pill" class="badge-running">RUNNING</span>
-        <span id="pipeline-current-step">Initializing automated pipeline stages...</span>
+        <span id="pipeline-current-step">Initializing pipeline execution...</span>
       </div>
-      <div class="pipeline-source-tag" id="pipeline-source-tag">Engine: Local Background Worker</div>
+      <div class="pipeline-source-tag" id="pipeline-source-tag">Engine: Local Runner</div>
     </div>
 
     <!-- Progress Bar -->
@@ -44,19 +43,18 @@
     <!-- Live Terminal Log Box -->
     <div class="admin-terminal-window">
       <div class="terminal-bar">
-        <span>stdout / execution log stream</span>
-        <span class="terminal-dots">● ● ●</span>
+        <span>Execution Output Log</span>
       </div>
       <div id="pipeline-terminal-logs" class="terminal-body">
-        <div class="log-line">[WAITING] Initiating step execution...</div>
+        <div class="log-line">[SYS] Initiating pipeline execution...</div>
       </div>
     </div>
   </div>
 
-  <!-- Section 1: Pipeline Health Telemetry Cards -->
+  <!-- Section 1: Telemetry Health Cards -->
   <div class="admin-telemetry-grid">
     <div class="card admin-metric-card">
-      <div class="admin-metric-label">Cron Schedule (GitHub Actions)</div>
+      <div class="admin-metric-label">Schedule (GitHub Actions)</div>
       <div class="admin-metric-val">0 13-21 * * 1-5</div>
       <div class="admin-metric-detail">Hourly during US market hours (Mon–Fri)</div>
     </div>
@@ -64,19 +62,19 @@
     <div class="card admin-metric-card">
       <div class="admin-metric-label">Last Ingest & Train Run</div>
       <div class="admin-metric-val" id="telemetry-last-run">{{ last_updated }}</div>
-      <div class="admin-metric-detail">Timestamp from <code>data/last_updated.txt</code></div>
+      <div class="admin-metric-detail">From <code>data/last_updated.txt</code></div>
     </div>
 
     <div class="card admin-metric-card">
-      <div class="admin-metric-label">Active Production Model</div>
-      <div class="admin-metric-val val-emerald">{{ deployed_model_name or "None Deployed" }}</div>
+      <div class="admin-metric-label">Active Champion Model</div>
+      <div class="admin-metric-val val-highlight">{{ deployed_model_name or "None Deployed" }}</div>
       <div class="admin-metric-detail">Promoted to <code>models/deployed_model.pkl</code></div>
     </div>
 
     <div class="card admin-metric-card">
-      <div class="admin-metric-label">Automated Storage Mechanism</div>
-      <div class="admin-metric-val">Git Repo Commit</div>
-      <div class="admin-metric-detail">Zero Cloud DB / Committed via CI bot</div>
+      <div class="admin-metric-label">Artifact Versioning</div>
+      <div class="admin-metric-val">Git Commit Bot</div>
+      <div class="admin-metric-detail">Committed by CI workflow to repo</div>
     </div>
   </div>
 
@@ -84,12 +82,12 @@
   <div class="card admin-card">
     <div class="admin-card-header">
       <div>
-        <h3 class="admin-card-title">Candidate Models Leaderboard (Latest Evaluation)</h3>
-        <p class="admin-card-subtitle">Comparing candidate regression algorithms on out-of-sample test splits. Evaluated by <code>train_models.py</code>.</p>
+        <h3 class="admin-card-title">Candidate Models Benchmark (Latest Run)</h3>
+        <p class="admin-card-subtitle">Evaluating candidate regression algorithms on out-of-sample test splits.</p>
       </div>
       <div class="leaderboard-meta">
-        <span class="badge badge-outline">Split: 80% Train / 20% Test</span>
-        <span class="badge badge-outline">Features: 12</span>
+        <span class="badge badge-meta">Split: 80% Train / 20% Test</span>
+        <span class="badge badge-meta">Features: 12</span>
       </div>
     </div>
 
@@ -98,12 +96,12 @@
         <thead>
           <tr>
             <th>Status</th>
-            <th>Algorithm Name</th>
-            <th>R² Score (Variance)</th>
+            <th>Algorithm</th>
+            <th>R² Score</th>
             <th>RMSE ($)</th>
             <th>MAE ($)</th>
-            <th>Inference Latency</th>
-            <th>Training Duration</th>
+            <th>Latency</th>
+            <th>Train Time</th>
           </tr>
         </thead>
         <tbody>
@@ -112,7 +110,7 @@
               <tr class="{% if name == deployed_model_name %}row-champion{% endif %}">
                 <td>
                   {% if name == deployed_model_name %}
-                    <span class="badge-deployed">DEPLOYED CHAMPION</span>
+                    <span class="badge-champion">DEPLOYED</span>
                   {% else %}
                     <span class="badge-candidate">CANDIDATE</span>
                   {% endif %}
@@ -132,7 +130,7 @@
           {% else %}
             <tr>
               <td colspan="7" class="text-center py-4">
-                No model metrics recorded yet. Click "Run Pipeline Now" to execute training.
+                No model metrics recorded yet. Trigger a pipeline run to benchmark candidate models.
               </td>
             </tr>
           {% endif %}
@@ -141,15 +139,14 @@
     </div>
   </div>
 
-  <!-- Section 3: Two-Column Ops Visualizations (Deployment History & EDA Heatmap) -->
+  <!-- Section 3: Visualizations & Heatmap -->
   <div class="admin-split-grid">
-
     <!-- Deployment History Chart -->
     <div class="card admin-card">
       <div class="admin-card-header">
         <div>
           <h3 class="admin-card-title">Model Deployment History</h3>
-          <p class="admin-card-subtitle">Distribution of promoted models across pipeline execution history.</p>
+          <p class="admin-card-subtitle">Frequency of models promoted to production across pipeline runs.</p>
         </div>
       </div>
       <div class="admin-chart-box">
@@ -157,7 +154,7 @@
       </div>
       <!-- Recent History Log Table -->
       <div class="recent-deploy-history">
-        <h4 class="history-subheading">Recent Promotion Audit Log</h4>
+        <h4 class="history-subheading">Recent Promotion Audit Trail</h4>
         <ul class="history-list">
           {% for entry in deployment_history|reverse %}
             {% if loop.index <= 4 %}
@@ -176,11 +173,11 @@
     <div class="card admin-card">
       <div class="admin-card-header">
         <div>
-          <h3 class="admin-card-title">Exploratory Data Analysis (EDA)</h3>
-          <p class="admin-card-subtitle">Feature correlation matrix exported by <code>clean_data.py</code>.</p>
+          <h3 class="admin-card-title">Correlation Heatmap</h3>
+          <p class="admin-card-subtitle">Feature correlation matrix generated by <code>clean_data.py</code>.</p>
         </div>
         <a href="{{ url_for('static', filename='eda_corr.png') }}" target="_blank" class="btn btn-sm btn-outline">
-          Full Image &nearr;
+          Full Image &rarr;
         </a>
       </div>
 
@@ -205,27 +202,25 @@
         </div>
       {% endif %}
     </div>
-
   </div>
 
   <!-- Section 4: Model Execution Run Log -->
   <div class="card admin-card">
     <div class="admin-card-header">
       <div>
-        <h3 class="admin-card-title">Automated Model Execution Log (data/model_run_log.txt)</h3>
-        <p class="admin-card-subtitle">Chronological record of model runs executed by GitHub Actions cron and manual triggers.</p>
+        <h3 class="admin-card-title">Execution Timestamp Log (data/model_run_log.txt)</h3>
+        <p class="admin-card-subtitle">Chronological record of model training runs.</p>
       </div>
-      <span class="badge badge-outline">Hourly during Market Hours</span>
+      <span class="badge badge-meta">Hourly Trigger</span>
     </div>
     <div class="admin-terminal-window">
       <div class="terminal-bar">
         <span>Execution Timestamps</span>
-        <span class="terminal-dots">● ● ●</span>
       </div>
       <div class="terminal-body" style="height: 120px;">
         {% if model_run_logs %}
           {% for entry in model_run_logs|reverse %}
-            <div class="log-line">⚡ {{ entry }}</div>
+            <div class="log-line">{{ entry }}</div>
           {% endfor %}
         {% else %}
           <div class="log-line">No runs logged yet.</div>
@@ -239,7 +234,6 @@
 
 {% block extra_scripts %}
 <script>
-  // Render Deployment History Chart
   const historyCounts = {{ history_counts|tojson|safe if history_counts else '{}' }};
   const historyLabels = Object.keys(historyCounts);
   const historyValues = Object.values(historyCounts);
@@ -251,24 +245,11 @@
       data: {
         labels: historyLabels,
         datasets: [{
-          label: 'Times Promoted to Production',
+          label: 'Deployments',
           data: historyValues,
-          backgroundColor: [
-            'rgba(16, 185, 129, 0.75)',
-            'rgba(59, 130, 246, 0.75)',
-            'rgba(245, 158, 11, 0.75)',
-            'rgba(139, 92, 246, 0.75)',
-            'rgba(236, 72, 153, 0.75)'
-          ],
-          borderColor: [
-            '#10b981',
-            '#3b82f6',
-            '#f5980b',
-            '#8b92f6',
-            '#ec4899'
-          ],
-          borderWidth: 1.5,
-          borderRadius: 6
+          backgroundColor: '#3b82f6',
+          borderRadius: 2,
+          borderWidth: 0
         }]
       },
       options: {
@@ -279,35 +260,31 @@
         },
         scales: {
           x: {
-            grid: { color: 'rgba(51, 65, 85, 0.4)' },
-            ticks: { color: '#94a3b8', font: { family: 'Inter', size: 11 } }
+            grid: { color: 'rgba(39, 39, 42, 0.6)' },
+            ticks: { color: '#a1a1aa', font: { family: 'Inter', size: 11 } }
           },
           y: {
             beginAtZero: true,
-            ticks: { stepSize: 1, color: '#94a3b8', font: { family: 'Inter', size: 11 } },
-            grid: { color: 'rgba(51, 65, 85, 0.4)' }
+            ticks: { stepSize: 1, color: '#a1a1aa', font: { family: 'Inter', size: 11 } },
+            grid: { color: 'rgba(39, 39, 42, 0.6)' }
           }
         }
       }
     });
   }
 
-  // =========================================================================
-  // Pipeline Triggering & Real-Time Polling Logic
-  // =========================================================================
   let pollInterval = null;
 
   function triggerPipelineRun() {
     const btn = document.getElementById('btn-trigger-pipeline');
     const btnText = document.getElementById('trigger-btn-text');
     const panel = document.getElementById('pipeline-progress-panel');
-    const progressBar = document.getElementById('pipeline-progress-bar');
     const terminalLogs = document.getElementById('pipeline-terminal-logs');
 
     btn.disabled = true;
     btnText.innerText = "Dispatching Run...";
     panel.style.display = 'block';
-    terminalLogs.innerHTML = '<div class="log-line">[SYSTEM] Sending pipeline trigger command...</div>';
+    terminalLogs.innerHTML = '<div class="log-line">[SYS] Sending pipeline trigger command...</div>';
 
     fetch('/api/admin/trigger-pipeline', {
       method: 'POST',
@@ -318,7 +295,7 @@
     .then(data => {
       document.getElementById('pipeline-source-tag').innerText = 
         data.source === 'github_actions' ? 'Engine: GitHub Actions Workflow' : 'Engine: Local Async Runner';
-      terminalLogs.innerHTML += `<div class="log-line">[TRIGGER] ${data.message}</div>`;
+      terminalLogs.innerHTML += `<div class="log-line">[DISPATCH] ${data.message}</div>`;
       startPolling();
     })
     .catch(err => {
@@ -362,9 +339,8 @@
           btnText.innerText = "Run Pipeline Now";
           clearInterval(pollInterval);
           setTimeout(() => {
-            // Reload page to reflect fresh models and leaderboard
             window.location.reload();
-          }, 2500);
+          }, 2000);
         } else if (state.status === 'failed') {
           statusPill.className = 'badge-danger';
           statusPill.innerText = 'FAILED';
