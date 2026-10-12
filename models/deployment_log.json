@@ -28,46 +28,6 @@
       "Random_Forest": {
         "r2": 0.9904,
         "rmse": 1.9542
-      },
-      "XGBoost": {
-        "r2": 0.9918,
-        "rmse": 1.8723
-      }
-    }
-  },
-  {
-    "run_id": "e4b981d2",
-    "timestamp": "2026-10-11 12:00:00 UTC",
-    "deployed_model": "XGBoost",
-    "selection_criterion": "r2",
-    "metrics_at_deployment": {
-      "model_name": "XGBoost",
-      "rmse": 1.8723,
-      "mae": 1.354,
-      "r2": 0.9918,
-      "inference_time_ms": 8.92,
-      "train_time_sec": 0.285
-    },
-    "all_candidates_summary": {
-      "Linear_Regression": {
-        "r2": 0.9842,
-        "rmse": 2.4512
-      },
-      "KNN_Regressor": {
-        "r2": 0.9715,
-        "rmse": 3.1205
-      },
-      "Decision_Tree": {
-        "r2": 0.9788,
-        "rmse": 2.8941
-      },
-      "Random_Forest": {
-        "r2": 0.9904,
-        "rmse": 1.9542
-      },
-      "XGBoost": {
-        "r2": 0.9918,
-        "rmse": 1.8723
       }
     }
   },
@@ -100,10 +60,6 @@
       "Random_Forest": {
         "r2": 0.9816,
         "rmse": 9.7305
-      },
-      "XGBoost": {
-        "r2": 0.9808,
-        "rmse": 9.9337
       }
     }
   },
@@ -136,10 +92,6 @@
       "Random_Forest": {
         "r2": 0.9816,
         "rmse": 9.7289
-      },
-      "XGBoost": {
-        "r2": 0.9804,
-        "rmse": 10.0547
       }
     }
   },
@@ -172,10 +124,6 @@
       "Random_Forest": {
         "r2": 0.9816,
         "rmse": 9.7298
-      },
-      "XGBoost": {
-        "r2": 0.9808,
-        "rmse": 9.9572
       }
     }
   }
