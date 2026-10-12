@@ -49,14 +49,6 @@
       "r2": 0.9816,
       "inference_time_ms": 23.07,
       "train_time_sec": 0.317
-    },
-    "XGBoost": {
-      "model_name": "XGBoost",
-      "rmse": 9.9572,
-      "mae": 6.9961,
-      "r2": 0.9808,
-      "inference_time_ms": 2.31,
-      "train_time_sec": 0.084
     }
   }
 }
