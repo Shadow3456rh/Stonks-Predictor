@@ -7,7 +7,7 @@ Trains, evaluates, and persists candidate regression models:
 2. K-Nearest Neighbors (KNN Regressor)
 3. Decision Tree Regressor
 4. Random Forest Regressor
-5. XGBoost Regressor (XGBRegressor)
+
 
 Computes RMSE, MAE, R², and inference time (ms) on an out-of-sample test split.
 Persists models to models/<model_name>.pkl and logs evaluation metrics to models/metrics.json.
@@ -31,11 +31,7 @@ from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor
 
 # Optional import for XGBoost with fallback
-try:
-    from xgboost import XGBRegressor
-    XGBOOST_AVAILABLE = True
-except ImportError:
-    XGBOOST_AVAILABLE = False
+
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 MODELS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "models")
@@ -102,20 +98,7 @@ def initialize_candidate_models():
         ])
     }
 
-    if XGBOOST_AVAILABLE:
-        models["XGBoost"] = Pipeline([
-            ("regressor", XGBRegressor(
-                n_estimators=100,
-                max_depth=5,
-                learning_rate=0.05,
-                subsample=0.8,
-                random_state=42,
-                n_jobs=-1
-            ))
-        ])
-    else:
-        print("[!] XGBoost is not installed in the environment. Training other 4 candidate models.")
-
+   
     return models
 
 
