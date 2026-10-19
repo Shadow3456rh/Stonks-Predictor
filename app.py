@@ -214,6 +214,144 @@ def generate_ticker_predictions(ticker):
         return None
 
 
+MODEL_DISPLAY_NAMES = {
+    "Linear_Regression": "Linear Regression",
+    "KNN_Regressor": "K-Nearest Neighbors",
+    "Decision_Tree": "Decision Tree",
+    "Random_Forest": "Random Forest"
+}
+
+
+def generate_candidate_model_evaluation(model_name, ticker, window=60):
+    """
+    Computes ground truth, predictions, residuals, and performance metrics
+    for a specific candidate regression model on a given ticker.
+    """
+    if not os.path.exists(CLEANED_DATA_PATH):
+        return None
+
+    model_path = os.path.join(MODELS_DIR, f"{model_name}.pkl")
+    if not os.path.exists(model_path):
+        return None
+
+    try:
+        model = joblib.load(model_path)
+        df = pd.read_csv(CLEANED_DATA_PATH)
+        df_ticker = df[df["Ticker"] == ticker].sort_values("Date").reset_index(drop=True)
+        if df_ticker.empty:
+            return None
+
+        feature_cols = [
+            "Open", "High", "Low", "Close", "Volume",
+            "MA_5", "MA_10", "MA_20", "MA_50",
+            "Daily_Return", "Volatility_10", "Spread"
+        ]
+
+        df_chart = df_ticker.tail(window).copy()
+        X_chart = df_chart[feature_cols]
+        predicted_targets = model.predict(X_chart)
+
+        dates = df_chart["Date"].tolist()
+        actual_prices = [round(float(p), 2) for p in df_chart["Close"]]
+        predicted_prices = [round(float(p), 2) for p in predicted_targets]
+        residuals = [round(float(a - p), 2) for a, p in zip(actual_prices, predicted_prices)]
+
+        latest_row = df_ticker.iloc[-1:]
+        X_latest = latest_row[feature_cols]
+        next_day_forecast = float(model.predict(X_latest)[0])
+        current_price = float(latest_row["Close"].values[0])
+        price_diff = next_day_forecast - current_price
+        pct_change = (price_diff / current_price) * 100 if current_price else 0.0
+
+        all_metrics = get_models_metrics()
+        model_metrics = all_metrics.get("models", {}).get(model_name, {})
+
+        deployment_log = get_deployment_log()
+        deployed_model_name = deployment_log[-1]["deployed_model"] if deployment_log else None
+        is_deployed = (deployed_model_name == model_name)
+
+        return {
+            "model_name": model_name,
+            "display_name": MODEL_DISPLAY_NAMES.get(model_name, model_name.replace("_", " ")),
+            "ticker": ticker,
+            "window": window,
+            "dates": dates,
+            "actual_prices": actual_prices,
+            "predicted_prices": predicted_prices,
+            "residuals": residuals,
+            "metrics": model_metrics,
+            "is_deployed": is_deployed,
+            "current_price": round(current_price, 2),
+            "next_day_predicted": round(next_day_forecast, 2),
+            "price_diff": round(price_diff, 2),
+            "pct_change": round(pct_change, 2),
+            "direction": "UP" if price_diff >= 0 else "DOWN",
+            "mean_abs_residual": round(float(np.mean(np.abs(residuals))), 2) if residuals else 0.0,
+            "max_residual": round(float(np.max(residuals)), 2) if residuals else 0.0,
+            "min_residual": round(float(np.min(residuals)), 2) if residuals else 0.0
+        }
+    except Exception as e:
+        print(f"[!] Error in generate_candidate_model_evaluation for {model_name} on {ticker}: {e}")
+        return None
+
+
+def generate_all_models_comparison(ticker, window=60):
+    """
+    Computes predictions for all candidate models simultaneously to overlay on a single chart.
+    """
+    if not os.path.exists(CLEANED_DATA_PATH):
+        return None
+
+    try:
+        df = pd.read_csv(CLEANED_DATA_PATH)
+        df_ticker = df[df["Ticker"] == ticker].sort_values("Date").reset_index(drop=True)
+        if df_ticker.empty:
+            return None
+
+        feature_cols = [
+            "Open", "High", "Low", "Close", "Volume",
+            "MA_5", "MA_10", "MA_20", "MA_50",
+            "Daily_Return", "Volatility_10", "Spread"
+        ]
+
+        df_chart = df_ticker.tail(window).copy()
+        X_chart = df_chart[feature_cols]
+        dates = df_chart["Date"].tolist()
+        actual_prices = [round(float(p), 2) for p in df_chart["Close"]]
+
+        all_metrics = get_models_metrics().get("models", {})
+        deployment_log = get_deployment_log()
+        deployed_model_name = deployment_log[-1]["deployed_model"] if deployment_log else None
+
+        models_data = {}
+        for m_name, m_label in MODEL_DISPLAY_NAMES.items():
+            m_path = os.path.join(MODELS_DIR, f"{m_name}.pkl")
+            if os.path.exists(m_path):
+                try:
+                    m = joblib.load(m_path)
+                    preds = [round(float(p), 2) for p in m.predict(X_chart)]
+                    models_data[m_name] = {
+                        "display_name": m_label,
+                        "predicted_prices": preds,
+                        "metrics": all_metrics.get(m_name, {}),
+                        "is_deployed": (deployed_model_name == m_name)
+                    }
+                except Exception as me:
+                    print(f"[!] Error loading {m_name}: {me}")
+
+        return {
+            "ticker": ticker,
+            "window": window,
+            "dates": dates,
+            "actual_prices": actual_prices,
+            "models": models_data
+        }
+    except Exception as e:
+        print(f"[!] Error in generate_all_models_comparison for {ticker}: {e}")
+        return None
+
+
+
 # ==============================================================================
 # Public & Authentication Routes
 # ==============================================================================
@@ -373,6 +511,13 @@ def admin_dashboard():
         m = entry.get("deployed_model", "Unknown")
         history_counts[m] = history_counts.get(m, 0) + 1
 
+    # Candidate model evaluation telemetry context
+    tickers = get_available_tickers()
+    candidate_models = list(MODEL_DISPLAY_NAMES.keys())
+    initial_model_name = deployed_model_name if deployed_model_name in candidate_models else "Linear_Regression"
+    initial_ticker = tickers[0] if tickers else "AAPL"
+    initial_graph_data = generate_candidate_model_evaluation(initial_model_name, initial_ticker, window=60)
+
     return render_template(
         "admin_dashboard.html",
         admin_username=session.get("admin_username"),
@@ -383,8 +528,15 @@ def admin_dashboard():
         history_counts=history_counts,
         eda_data=eda_data,
         pipeline_state=pipeline_state,
-        model_run_logs=get_model_run_logs()
+        model_run_logs=get_model_run_logs(),
+        tickers=tickers,
+        candidate_models=candidate_models,
+        model_display_names=MODEL_DISPLAY_NAMES,
+        initial_model_name=initial_model_name,
+        initial_ticker=initial_ticker,
+        initial_graph_data=initial_graph_data
     )
+
 
 
 def run_local_pipeline_worker():
@@ -519,6 +671,32 @@ def get_pipeline_status():
         "last_updated": get_last_updated_time(),
         "source": pipeline_state["source"]
     })
+
+
+@app.route("/api/admin/model-graph-data")
+@admin_required
+def api_admin_model_graph_data():
+    """
+    Returns trajectory, residuals, and metrics for a specific candidate model
+    or all candidate models compared simultaneously for admin telemetry inspection.
+    """
+    compare_all = request.args.get("compare_all", "false").lower() == "true"
+    ticker = request.args.get("ticker", "AAPL").upper()
+    try:
+        window = int(request.args.get("window", 60))
+    except ValueError:
+        window = 60
+
+    if compare_all:
+        data = generate_all_models_comparison(ticker, window=window)
+    else:
+        model_name = request.args.get("model", "Linear_Regression")
+        data = generate_candidate_model_evaluation(model_name, ticker, window=window)
+
+    if not data:
+        return jsonify({"error": "Failed to generate model telemetry and prediction graph."}), 404
+
+    return jsonify(data)
 
 
 # ==============================================================================

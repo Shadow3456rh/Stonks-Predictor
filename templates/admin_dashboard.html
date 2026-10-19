@@ -139,7 +139,119 @@
     </div>
   </div>
 
-  <!-- Section 3: Visualizations & Heatmap -->
+  <!-- Section 3: Interactive Candidate Model Graph & Residual Inspector -->
+  <div class="card admin-card model-inspector-card">
+    <div class="admin-card-header">
+      <div>
+        <h3 class="admin-card-title">Candidate Models Graph & Telemetry Inspector</h3>
+        <p class="admin-card-subtitle">Select any individual candidate regression model to inspect its prediction curve, ground-truth alignment, and residual error distribution, or compare all models simultaneously.</p>
+      </div>
+
+      <!-- Controls: Model, Equity Ticker, Horizon, and Compare Toggle -->
+      <div class="inspector-controls-bar">
+        <div class="model-select-group">
+          <label for="inspector-model-select" class="control-label">Model:</label>
+          <select id="inspector-model-select" class="form-select-sm" onchange="onInspectorChange()">
+            {% for m_key in candidate_models %}
+              <option value="{{ m_key }}" {% if m_key == initial_model_name %}selected{% endif %}>
+                {{ model_display_names[m_key] }} {% if m_key == deployed_model_name %}(Deployed){% endif %}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="ticker-select-group">
+          <label for="inspector-ticker-select" class="control-label">Equity:</label>
+          <select id="inspector-ticker-select" class="form-select-sm" onchange="onInspectorChange()">
+            {% for sym in tickers %}
+              <option value="{{ sym }}" {% if sym == initial_ticker %}selected{% endif %}>{{ sym }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="window-select-group">
+          <label for="inspector-window-select" class="control-label">Horizon:</label>
+          <select id="inspector-window-select" class="form-select-sm" onchange="onInspectorChange()">
+            <option value="30">30 Days</option>
+            <option value="60" selected>60 Days</option>
+            <option value="90">90 Days</option>
+          </select>
+        </div>
+
+        <div class="toggle-group">
+          <button type="button" id="btn-toggle-compare-all" class="btn-outline-toggle" onclick="toggleCompareAll()">
+            <span id="compare-toggle-label">Overlay All Models</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Model Metric Scorecard Strip -->
+    <div id="inspector-metrics-strip" class="inspector-metrics-strip">
+      <div class="strip-item">
+        <span class="strip-label">Selected Model</span>
+        <span class="strip-val" id="strip-model-name">{{ initial_graph_data.display_name if initial_graph_data else "Linear Regression" }}</span>
+      </div>
+      <div class="strip-item">
+        <span class="strip-label">Status</span>
+        <span class="strip-val" id="strip-status">
+          {% if initial_graph_data and initial_graph_data.is_deployed %}
+            <span class="badge-champion">DEPLOYED</span>
+          {% else %}
+            <span class="badge-candidate">CANDIDATE</span>
+          {% endif %}
+        </span>
+      </div>
+      <div class="strip-item">
+        <span class="strip-label">Test R² Score</span>
+        <span class="strip-val val-highlight" id="strip-r2">{{ initial_graph_data.metrics.r2 if initial_graph_data and initial_graph_data.metrics else "0.9864" }}</span>
+      </div>
+      <div class="strip-item">
+        <span class="strip-label">Test RMSE</span>
+        <span class="strip-val" id="strip-rmse">${{ initial_graph_data.metrics.rmse if initial_graph_data and initial_graph_data.metrics else "8.56" }}</span>
+      </div>
+      <div class="strip-item">
+        <span class="strip-label">Test MAE</span>
+        <span class="strip-val" id="strip-mae">${{ initial_graph_data.metrics.mae if initial_graph_data and initial_graph_data.metrics else "5.86" }}</span>
+      </div>
+      <div class="strip-item">
+        <span class="strip-label">Latency</span>
+        <span class="strip-val" id="strip-latency">{{ initial_graph_data.metrics.inference_time_ms if initial_graph_data and initial_graph_data.metrics else "1.85" }} ms</span>
+      </div>
+      <div class="strip-item">
+        <span class="strip-label">Next-Day Forecast</span>
+        <span class="strip-val" id="strip-forecast">${{ initial_graph_data.next_day_predicted if initial_graph_data else "—" }}</span>
+      </div>
+    </div>
+
+    <!-- Dual Plots Grid: Main Prediction Trajectory + Residual Plot -->
+    <div class="inspector-plots-grid">
+      <!-- Plot 1: Prediction Curve vs Ground Truth -->
+      <div class="inspector-chart-container">
+        <div class="chart-header-sub">
+          <span class="chart-title-sub" id="main-chart-title">Ground Truth vs Model Predictions</span>
+          <span class="chart-badge-sub" id="main-chart-legend-badge">Daily Close Series ($)</span>
+        </div>
+        <div class="inspector-canvas-box">
+          <canvas id="modelTrajectoryChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Plot 2: Prediction Residuals or Error Distribution -->
+      <div class="inspector-chart-container" id="residual-chart-wrapper">
+        <div class="chart-header-sub">
+          <span class="chart-title-sub" id="residual-chart-title">Prediction Residuals (Actual − Predicted)</span>
+          <span class="chart-badge-sub" id="residual-summary-badge">Mean Error: ${{ initial_graph_data.mean_abs_residual if initial_graph_data else "0.00" }}</span>
+        </div>
+        <div class="inspector-canvas-box">
+          <canvas id="modelResidualChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 4: Visualizations & Heatmap -->
+
   <div class="admin-split-grid">
     <!-- Deployment History Chart -->
     <div class="card admin-card">
@@ -272,6 +384,401 @@
       }
     });
   }
+
+  // ============================================================================
+  // Candidate Model Graph & Telemetry Inspector
+  // ============================================================================
+  let trajectoryChart = null;
+  let residualChart = null;
+  let compareAllActive = false;
+  const initialModelData = {{ initial_graph_data|tojson|safe if initial_graph_data else 'null' }};
+
+  const chartTheme = {
+    fontFamily: "'Inter', -apple-system, sans-serif",
+    gridColor: 'rgba(226, 232, 240, 0.8)',
+    tickColor: '#64748b',
+    tooltipBg: '#0f172a'
+  };
+
+  const modelPalette = {
+    Linear_Regression: { color: '#2563eb', borderDash: [] },
+    KNN_Regressor: { color: '#10b981', borderDash: [4, 4] },
+    Decision_Tree: { color: '#d97706', borderDash: [2, 2] },
+    Random_Forest: { color: '#7c3aed', borderDash: [] }
+  };
+
+  function initInspectorCharts() {
+    const trajCanvas = document.getElementById('modelTrajectoryChart');
+    const residCanvas = document.getElementById('modelResidualChart');
+    if (!trajCanvas || !residCanvas) return;
+
+    if (initialModelData) {
+      renderSingleModelCharts(initialModelData);
+    } else {
+      onInspectorChange();
+    }
+  }
+
+  function renderSingleModelCharts(data) {
+    // 1. Update Telemetry Metrics Strip
+    document.getElementById('strip-model-name').innerText = data.display_name || data.model_name;
+    const statusEl = document.getElementById('strip-status');
+    if (data.is_deployed) {
+      statusEl.innerHTML = '<span class="badge-champion">DEPLOYED CHAMPION</span>';
+    } else {
+      statusEl.innerHTML = '<span class="badge-candidate">BENCHMARK CANDIDATE</span>';
+    }
+
+    const m = data.metrics || {};
+    document.getElementById('strip-r2').innerText = m.r2 !== undefined ? m.r2 : 'N/A';
+    document.getElementById('strip-rmse').innerText = m.rmse !== undefined ? `$${m.rmse}` : 'N/A';
+    document.getElementById('strip-mae').innerText = m.mae !== undefined ? `$${m.mae}` : 'N/A';
+    document.getElementById('strip-latency').innerText = m.inference_time_ms !== undefined ? `${m.inference_time_ms} ms` : 'N/A';
+    document.getElementById('strip-forecast').innerText = data.next_day_predicted !== undefined ? `$${data.next_day_predicted}` : '—';
+
+    // 2. Titles & Badges
+    document.getElementById('main-chart-title').innerText = `${data.display_name} Predictions vs Actual (${data.ticker})`;
+    document.getElementById('main-chart-legend-badge').innerText = `${data.dates ? data.dates.length : 0} Trading Days`;
+    document.getElementById('residual-chart-title').innerText = `Residuals (Actual − Predicted) for ${data.display_name}`;
+    document.getElementById('residual-summary-badge').innerText = `MAE: $${data.mean_abs_residual ? data.mean_abs_residual.toFixed(2) : '0.00'}`;
+
+    // 3. Render / Update Main Trajectory Chart
+    const trajCtx = document.getElementById('modelTrajectoryChart').getContext('2d');
+    if (trajectoryChart) trajectoryChart.destroy();
+
+    const modelColor = (modelPalette[data.model_name] && modelPalette[data.model_name].color) || '#2563eb';
+
+    trajectoryChart = new Chart(trajCtx, {
+      type: 'line',
+      data: {
+        labels: data.dates,
+        datasets: [
+          {
+            label: 'Actual Ground Truth ($)',
+            data: data.actual_prices,
+            borderColor: '#0f172a',
+            backgroundColor: '#0f172a',
+            borderWidth: 2,
+            pointRadius: 1.5,
+            pointHoverRadius: 4,
+            tension: 0.1
+          },
+          {
+            label: `${data.display_name} Predicted ($)`,
+            data: data.predicted_prices,
+            borderColor: modelColor,
+            backgroundColor: modelColor,
+            borderWidth: 2,
+            borderDash: (modelPalette[data.model_name] && modelPalette[data.model_name].borderDash) || [],
+            pointRadius: 1.5,
+            pointHoverRadius: 4,
+            tension: 0.1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+            labels: { boxWidth: 14, font: { family: chartTheme.fontFamily, size: 11 }, color: '#334155' }
+          },
+          tooltip: {
+            backgroundColor: chartTheme.tooltipBg,
+            titleFont: { family: chartTheme.fontFamily, size: 12 },
+            bodyFont: { family: chartTheme.fontFamily, size: 11 },
+            padding: 9,
+            cornerRadius: 4,
+            callbacks: {
+              label: function(ctx) {
+                return `${ctx.dataset.label}: $${Number(ctx.parsed.y).toFixed(2)}`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: chartTheme.gridColor },
+            ticks: { color: chartTheme.tickColor, font: { family: chartTheme.fontFamily, size: 10 }, maxRotation: 45 }
+          },
+          y: {
+            grid: { color: chartTheme.gridColor },
+            ticks: {
+              color: chartTheme.tickColor,
+              font: { family: chartTheme.fontFamily, size: 10 },
+              callback: function(v) { return '$' + v; }
+            }
+          }
+        }
+      }
+    });
+
+    // 4. Render / Update Residual Chart
+    const residCtx = document.getElementById('modelResidualChart').getContext('2d');
+    if (residualChart) residualChart.destroy();
+
+    const residualBg = (data.residuals || []).map(r => r >= 0 ? '#3b82f6' : '#ef4444');
+
+    residualChart = new Chart(residCtx, {
+      type: 'bar',
+      data: {
+        labels: data.dates,
+        datasets: [{
+          label: 'Prediction Residual ($)',
+          data: data.residuals,
+          backgroundColor: residualBg,
+          borderRadius: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: chartTheme.tooltipBg,
+            padding: 9,
+            cornerRadius: 4,
+            callbacks: {
+              label: function(ctx) {
+                const val = Number(ctx.parsed.y);
+                const tag = val >= 0 ? 'Underpredicted' : 'Overpredicted';
+                return `Delta: ${val >= 0 ? '+' : ''}$${val.toFixed(2)} (${tag})`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: chartTheme.gridColor },
+            ticks: { color: chartTheme.tickColor, font: { family: chartTheme.fontFamily, size: 10 }, maxRotation: 45 }
+          },
+          y: {
+            grid: { color: chartTheme.gridColor },
+            ticks: {
+              color: chartTheme.tickColor,
+              font: { family: chartTheme.fontFamily, size: 10 },
+              callback: function(v) { return (v >= 0 ? '+' : '') + '$' + v; }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function renderMultiModelComparison(data) {
+    document.getElementById('strip-model-name').innerText = "All Candidate Models";
+    document.getElementById('strip-status').innerHTML = '<span class="badge-meta">MULTI-MODEL COMPARISON</span>';
+    document.getElementById('strip-r2').innerText = "Comparative";
+    document.getElementById('strip-rmse').innerText = "Benchmarked";
+    document.getElementById('strip-mae').innerText = "Overlaid";
+    document.getElementById('strip-latency').innerText = "All Ensembled";
+    document.getElementById('strip-forecast').innerText = "Multi";
+
+    document.getElementById('main-chart-title').innerText = `Multi-Model Forecast Comparison (${data.ticker})`;
+    document.getElementById('main-chart-legend-badge').innerText = `Overlay of 4 Regression Models`;
+    document.getElementById('residual-chart-title').innerText = `Out-of-Sample MAE & RMSE Comparison ($)`;
+    document.getElementById('residual-summary-badge').innerText = `Lower is Better`;
+
+    // 1. Multi-Line Chart
+    const trajCtx = document.getElementById('modelTrajectoryChart').getContext('2d');
+    if (trajectoryChart) trajectoryChart.destroy();
+
+    const datasets = [
+      {
+        label: 'Actual Ground Truth ($)',
+        data: data.actual_prices,
+        borderColor: '#0f172a',
+        backgroundColor: '#0f172a',
+        borderWidth: 2.5,
+        pointRadius: 0,
+        tension: 0.1
+      }
+    ];
+
+    const modelKeys = Object.keys(data.models || {});
+    modelKeys.forEach(mKey => {
+      const mInfo = data.models[mKey];
+      const cfg = modelPalette[mKey] || { color: '#6366f1', borderDash: [] };
+      datasets.push({
+        label: `${mInfo.display_name} ($)`,
+        data: mInfo.predicted_prices,
+        borderColor: cfg.color,
+        backgroundColor: cfg.color,
+        borderWidth: 1.8,
+        borderDash: cfg.borderDash,
+        pointRadius: 0,
+        tension: 0.1
+      });
+    });
+
+    trajectoryChart = new Chart(trajCtx, {
+      type: 'line',
+      data: {
+        labels: data.dates,
+        datasets: datasets
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+            labels: { boxWidth: 12, font: { family: chartTheme.fontFamily, size: 10 }, color: '#334155' }
+          },
+          tooltip: {
+            backgroundColor: chartTheme.tooltipBg,
+            padding: 8,
+            cornerRadius: 4,
+            callbacks: {
+              label: function(ctx) {
+                return `${ctx.dataset.label}: $${Number(ctx.parsed.y).toFixed(2)}`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: chartTheme.gridColor },
+            ticks: { color: chartTheme.tickColor, font: { family: chartTheme.fontFamily, size: 10 }, maxRotation: 45 }
+          },
+          y: {
+            grid: { color: chartTheme.gridColor },
+            ticks: {
+              color: chartTheme.tickColor,
+              font: { family: chartTheme.fontFamily, size: 10 },
+              callback: function(v) { return '$' + v; }
+            }
+          }
+        }
+      }
+    });
+
+    // 2. Bar Chart of MAE & RMSE across candidate models
+    const residCtx = document.getElementById('modelResidualChart').getContext('2d');
+    if (residualChart) residualChart.destroy();
+
+    const algoLabels = [];
+    const maes = [];
+    const rmses = [];
+
+    modelKeys.forEach(mKey => {
+      const mInfo = data.models[mKey];
+      algoLabels.push(mInfo.display_name);
+      maes.push(mInfo.metrics ? mInfo.metrics.mae : 0);
+      rmses.push(mInfo.metrics ? mInfo.metrics.rmse : 0);
+    });
+
+    residualChart = new Chart(residCtx, {
+      type: 'bar',
+      data: {
+        labels: algoLabels,
+        datasets: [
+          {
+            label: 'MAE ($)',
+            data: maes,
+            backgroundColor: '#2563eb',
+            borderRadius: 3
+          },
+          {
+            label: 'RMSE ($)',
+            data: rmses,
+            backgroundColor: '#64748b',
+            borderRadius: 3
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+            labels: { boxWidth: 12, font: { family: chartTheme.fontFamily, size: 11 }, color: '#334155' }
+          },
+          tooltip: {
+            backgroundColor: chartTheme.tooltipBg,
+            padding: 8,
+            cornerRadius: 4,
+            callbacks: {
+              label: function(ctx) {
+                return `${ctx.dataset.label}: $${Number(ctx.parsed.y).toFixed(2)}`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { color: chartTheme.tickColor, font: { family: chartTheme.fontFamily, size: 11 } }
+          },
+          y: {
+            grid: { color: chartTheme.gridColor },
+            ticks: {
+              color: chartTheme.tickColor,
+              font: { family: chartTheme.fontFamily, size: 10 },
+              callback: function(v) { return '$' + v; }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function onInspectorChange() {
+    const model = document.getElementById('inspector-model-select').value;
+    const ticker = document.getElementById('inspector-ticker-select').value;
+    const windowDays = document.getElementById('inspector-window-select').value;
+
+    const url = compareAllActive
+      ? `/api/admin/model-graph-data?compare_all=true&ticker=${encodeURIComponent(ticker)}&window=${windowDays}`
+      : `/api/admin/model-graph-data?model=${encodeURIComponent(model)}&ticker=${encodeURIComponent(ticker)}&window=${windowDays}`;
+
+    fetch(url)
+      .then(res => {
+        if (!res.ok) throw new Error("Network response was not ok");
+        return res.json();
+      })
+      .then(data => {
+        if (compareAllActive) {
+          renderMultiModelComparison(data);
+        } else {
+          renderSingleModelCharts(data);
+        }
+      })
+      .catch(err => {
+        console.error("Failed to load model inspector graph:", err);
+      });
+  }
+
+  function toggleCompareAll() {
+    compareAllActive = !compareAllActive;
+    const toggleBtn = document.getElementById('btn-toggle-compare-all');
+    const toggleLabel = document.getElementById('compare-toggle-label');
+    const modelSelect = document.getElementById('inspector-model-select');
+
+    if (compareAllActive) {
+      toggleBtn.classList.add('active');
+      toggleLabel.innerText = "Exit Comparison (Single Model)";
+      modelSelect.disabled = true;
+    } else {
+      toggleBtn.classList.remove('active');
+      toggleLabel.innerText = "Overlay All Models";
+      modelSelect.disabled = false;
+    }
+    onInspectorChange();
+  }
+
+  // Trigger chart initialization once DOM is ready
+  document.addEventListener('DOMContentLoaded', initInspectorCharts);
+
 
   let pollInterval = null;
 

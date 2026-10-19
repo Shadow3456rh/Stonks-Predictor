@@ -1345,8 +1345,148 @@ a:hover {
 }
 
 /* ==============================================================================
+   Candidate Model Telemetry & Prediction Inspector
+   ============================================================================== */
+.model-inspector-card {
+  margin-bottom: 1.75rem;
+}
+
+.inspector-controls-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+}
+
+.control-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-right: 0.35rem;
+}
+
+.form-select-sm {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  color: var(--text-main);
+  padding: 0.35rem 0.65rem;
+  font-size: 0.82rem;
+  font-family: var(--font-sans);
+  border-radius: var(--radius-sm);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.form-select-sm:focus {
+  border-color: var(--color-blue);
+}
+
+.btn-outline-toggle {
+  background: var(--bg-muted);
+  border: 1px solid var(--border-strong);
+  color: var(--text-main);
+  padding: 0.35rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-outline-toggle:hover {
+  background: #e2e8f0;
+}
+
+.btn-outline-toggle.active {
+  background: var(--color-primary);
+  color: #ffffff;
+  border-color: var(--color-primary);
+}
+
+.inspector-metrics-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+  gap: 0.75rem;
+  background: var(--bg-app);
+  border: 1px solid var(--border);
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-sm);
+  margin-bottom: 1.25rem;
+}
+
+.strip-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.strip-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.strip-val {
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--text-main);
+}
+
+.inspector-plots-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+@media (max-width: 960px) {
+  .inspector-plots-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.inspector-chart-container {
+  background: var(--bg-app);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+}
+
+.chart-header-sub {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.chart-title-sub {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.chart-badge-sub {
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+}
+
+.inspector-canvas-box {
+  position: relative;
+  height: 270px;
+  width: 100%;
+}
+
+/* ==============================================================================
    Footer
    ============================================================================== */
+
 .app-footer {
   margin-top: auto;
   background: var(--bg-surface);
