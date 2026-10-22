@@ -702,5 +702,37 @@
         "rmse": 9.9921
       }
     }
+  },
+  {
+    "run_id": "4ea3b8ab",
+    "timestamp": "2026-10-22 21:14:13 UTC",
+    "deployed_model": "Linear_Regression",
+    "selection_criterion": "r2",
+    "metrics_at_deployment": {
+      "model_name": "Linear_Regression",
+      "rmse": 8.4872,
+      "mae": 5.8383,
+      "r2": 0.987,
+      "inference_time_ms": 1.11,
+      "train_time_sec": 0.013
+    },
+    "all_candidates_summary": {
+      "Linear_Regression": {
+        "r2": 0.987,
+        "rmse": 8.4872
+      },
+      "KNN_Regressor": {
+        "r2": 0.9497,
+        "rmse": 16.6797
+      },
+      "Decision_Tree": {
+        "r2": 0.9742,
+        "rmse": 11.9508
+      },
+      "Random_Forest": {
+        "r2": 0.9817,
+        "rmse": 10.076
+      }
+    }
   }
 ]
