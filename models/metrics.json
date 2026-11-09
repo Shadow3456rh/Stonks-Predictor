@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-11-06 23:58:21 UTC",
+  "timestamp": "2026-11-09 22:53:20 UTC",
   "features": [
     "Open",
     "High",
@@ -15,40 +15,40 @@
     "Spread"
   ],
   "target": "Target_Next_Close",
-  "train_samples": 2000,
-  "test_samples": 500,
+  "train_samples": 1996,
+  "test_samples": 499,
   "models": {
     "Linear_Regression": {
       "model_name": "Linear_Regression",
-      "rmse": 8.9068,
-      "mae": 5.9378,
+      "rmse": 8.9533,
+      "mae": 5.9686,
       "r2": 0.987,
-      "inference_time_ms": 0.83,
-      "train_time_sec": 0.01
+      "inference_time_ms": 1.38,
+      "train_time_sec": 0.013
     },
     "KNN_Regressor": {
       "model_name": "KNN_Regressor",
-      "rmse": 16.8572,
-      "mae": 12.1223,
-      "r2": 0.9535,
-      "inference_time_ms": 6.86,
-      "train_time_sec": 0.003
+      "rmse": 16.7272,
+      "mae": 12.0083,
+      "r2": 0.9548,
+      "inference_time_ms": 11.18,
+      "train_time_sec": 0.005
     },
     "Decision_Tree": {
       "model_name": "Decision_Tree",
-      "rmse": 14.1227,
-      "mae": 9.7116,
-      "r2": 0.9674,
-      "inference_time_ms": 0.64,
-      "train_time_sec": 0.008
+      "rmse": 12.2803,
+      "mae": 8.8063,
+      "r2": 0.9756,
+      "inference_time_ms": 1.03,
+      "train_time_sec": 0.013
     },
     "Random_Forest": {
       "model_name": "Random_Forest",
-      "rmse": 10.6215,
-      "mae": 7.5815,
-      "r2": 0.9816,
-      "inference_time_ms": 12.53,
-      "train_time_sec": 0.221
+      "rmse": 10.2213,
+      "mae": 7.0955,
+      "r2": 0.9831,
+      "inference_time_ms": 23.5,
+      "train_time_sec": 0.312
     }
   }
 }
