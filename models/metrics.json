@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-11-25 22:09:40 UTC",
+  "timestamp": "2026-11-26 22:08:12 UTC",
   "features": [
     "Open",
     "High",
@@ -23,15 +23,15 @@
       "rmse": 8.8047,
       "mae": 5.8847,
       "r2": 0.9882,
-      "inference_time_ms": 1.1,
-      "train_time_sec": 0.049
+      "inference_time_ms": 1.15,
+      "train_time_sec": 0.012
     },
     "KNN_Regressor": {
       "model_name": "KNN_Regressor",
       "rmse": 16.2472,
       "mae": 11.306,
       "r2": 0.9599,
-      "inference_time_ms": 7.04,
+      "inference_time_ms": 9.41,
       "train_time_sec": 0.004
     },
     "Decision_Tree": {
@@ -39,16 +39,16 @@
       "rmse": 12.6064,
       "mae": 8.7678,
       "r2": 0.9759,
-      "inference_time_ms": 0.69,
-      "train_time_sec": 0.009
+      "inference_time_ms": 0.81,
+      "train_time_sec": 0.011
     },
     "Random_Forest": {
       "model_name": "Random_Forest",
-      "rmse": 10.0917,
-      "mae": 7.0064,
+      "rmse": 10.0949,
+      "mae": 7.0098,
       "r2": 0.9845,
-      "inference_time_ms": 23.15,
-      "train_time_sec": 0.236
+      "inference_time_ms": 23.01,
+      "train_time_sec": 0.278
     }
   }
 }
